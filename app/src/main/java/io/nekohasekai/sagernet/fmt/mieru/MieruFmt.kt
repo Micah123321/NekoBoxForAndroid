@@ -22,6 +22,7 @@ import android.net.Uri
 import android.util.Base64
 import io.nekohasekai.sagernet.ktx.applyDefaultValues
 import moe.matsuri.nb4a.SingBoxOptions
+import java.net.URI
 import java.net.URLDecoder
 import java.util.Locale
 
@@ -134,7 +135,7 @@ fun parseMieruSimpleLinks(link: String): List<MieruBean> {
     val groups = ports.zip(transports).groupBy { it.second.uppercase(Locale.ROOT) }
     return groups.map { (transport, bindings) ->
         MieruBean().apply {
-            serverAddress = uri.host ?: error("Mieru server is missing")
+            serverAddress = URI(link).host?.removeSurrounding("[", "]") ?: error("Mieru server is missing")
             username = Uri.decode(userInfo.substring(0, separator))
             password = Uri.decode(userInfo.substring(separator + 1))
             name = query["profile"]?.firstOrNull() ?: uri.fragment.orEmpty()
