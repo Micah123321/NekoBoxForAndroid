@@ -45,6 +45,18 @@ CI 工作流使用 Go 版本范围 ^1.25；仓库 libcore/go.mod 自身声明 to
 - 原生准备：bash ./run lib core。该命令在依赖、NDK 和 Linux 兼容 shell 未就绪时应先补齐前置条件。
 - 签名密码、密钥和本机 SDK 路径具体值不写入知识库。
 
+## GitHub Actions 构建验证
+
+- 2026-11-05：启用远端 Actions 后，Release Build 工作流成功触发。
+- 运行：https://github.com/Micah123321/NekoBoxForAndroid/actions/runs/42034254557。
+- 原生 libcore 构建通过，OSS APK 构建通过，artifact 上传通过；Publish Release 与 Play Bundle 已跳过。
+- APK artifact 已下载到 H:/hack/android/artifacts/ci-build-20261105。
+- CI 原始产物为 1.4.2 的四种 ABI unsigned APK：arm64-v8a、armeabi-v7a、x86、x86_64，均包含对应架构的 libgojni.so。
+- 已在本机使用独立开发签名生成四种 ABI 的安装包，位于 H:/hack/android/artifacts/ci-build-20261105/signed；原始 unsigned APK 保留。
+- 四种签名包均通过 apksigner v1/v2/v3 签名验证与 zipalign 对齐检查；SHA-256 记录在 signed/SHA256SUMS.txt。
+- APK 元数据：package=moe.nb4a、versionName=1.4.2、versionCode=230、targetSdk=35。开发签名与官方版签名不同；真机启动和代理功能尚未测试。
+- 本机完整构建仍需补齐 app/libs/libcore.aar；远端构建链已验证可用。
+
 ## 证据来源
 
 - settings.gradle.kts、build.gradle.kts、app/build.gradle.kts。
