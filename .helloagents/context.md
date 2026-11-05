@@ -12,19 +12,20 @@ NekoBox for Android 是一个单模块 Android 应用，根项目名为 NB4A，�
 - Android Gradle Plugin：8.8.1，定义在 buildSrc/build.gradle.kts。
 - Kotlin Gradle Plugin：2.0.21，定义在 buildSrc/build.gradle.kts。
 - Android 配置：compileSdk 35、targetSdk 35、minSdk 21、buildToolsVersion 35.0.1。
+- Android SDK、Build Tools、Windows NDK、模拟器和 Android 35 x86_64 系统镜像已安装到 H:/hack/android/Sdk。
 - gradlew.bat tasks --all --console=plain：通过。
 - go.exe：可用，版本 go1.26.4；libcore/go.mod 声明 go 1.23.1 和 toolchain go1.23.6。
 - bash.exe、wsl.exe：命令入口存在，但 bash.exe 实际转发到 WSL；bash.exe -c 'uname -s' 实测因 WSL 运行时错误退出。原生构建脚本使用 Bash，并固定使用 Linux NDK 工具链目录。
+- Gradle 已通过 local.properties 使用 H:/hack/android/Sdk；当前编译已进入 Kotlin 阶段。
 
 ## 当前缺口
 
-- ANDROID_HOME 和 ANDROID_SDK_ROOT 未设置。
-- adb、sdkmanager、emulator、avdmanager 未在 PATH 中发现。
-- 常用本机 SDK 路径 %LOCALAPPDATA%/Android/Sdk 未发现。
-- local.properties 不存在；构建时需要提供 sdk.dir，原生构建还需要 ndk.dir 或等效 NDK 环境变量。
+- ANDROID_HOME 和 ANDROID_SDK_ROOT 仍未设置；项目通过被忽略的 local.properties 指向 H:/hack/android/Sdk。
+- adb、sdkmanager、emulator、avdmanager 已安装在 H:/hack/android/Sdk，但尚未加入当前 PATH。
+- local.properties 已写入 sdk.dir 和 ndk.dir，仅用于本机 Gradle。
 - app/libs/libcore.aar 不存在；app/build.gradle.kts 会从 app/libs 加载本地库。
 - libcore/go.mod 的本地替换目录 libneko 和 sing-box 当前未发现。
-- gomobile-matsuri 和 gobind-matsuri 当前未在 PATH 中发现。
+- gomobile-matsuri 和 gobind-matsuri 二进制当前未在 PATH 中发现；gomobile 源码已下载到 H:/hack/android/native/gomobile。
 - WSL Linux 运行时当前不可用，无法直接执行 libcore 的 Linux 原生构建脚本。
 - 未发现 app/src/test 和 app/src/androidTest 测试源目录。Gradle 任务仍提供单元测试和连接设备测试入口。
 
@@ -39,6 +40,7 @@ CI 工作流使用 Go 版本范围 ^1.25；仓库 libcore/go.mod 自身声明 to
 - 默认构建变体：ossDebug。
 - 默认测试：app:testOssDebugUnitTest。当前没有测试源时，任务可能以 NO-SOURCE 结束。
 - 默认编译/打包：app:assembleOssDebug。
+- SDK 配置后已重新执行 app:compileOssDebugKotlin 和 app:testOssDebugUnitTest；编译已越过 SDK 检查，但因缺少 app/libs/libcore.aar 产生 libcore 未解析错误，测试尚未开始。
 - 设备测试：app:connectedOssDebugAndroidTest，要求 Android SDK、adb 和已连接设备或模拟器。
 - 原生准备：bash ./run lib core。该命令在依赖、NDK 和 Linux 兼容 shell 未就绪时应先补齐前置条件。
 - 签名密码、密钥和本机 SDK 路径具体值不写入知识库。
