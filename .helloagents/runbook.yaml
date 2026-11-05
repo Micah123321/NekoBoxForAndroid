@@ -1,0 +1,78 @@
+version: 1
+
+validation:
+  workflows:
+    default: local_iteration
+    latest_commit: latest_commit_fixes
+  before_commit:
+    - command_ref: commands.native_core
+      when: "app/libs/libcore.aar missing"
+    - command_ref: commands.unit_test
+    - command_ref: commands.assemble_debug
+
+workflows:
+  local_iteration:
+    default: true
+    environment: local
+    requires_prerequisites:
+      - android_sdk_35
+      - android_ndk_25.0.8775105
+      - libcore_aar
+    intent:
+      scope: compile_and_unit_test
+      keywords:
+        - 编译
+        - 构建
+        - 单元测试
+        - 本地验证
+    steps:
+      - name: native_core
+        command_ref: commands.native_core
+        requires_linux_compatible_shell: true
+      - name: compile
+        command_ref: commands.compile
+      - name: unit_test
+        command_ref: commands.unit_test
+        expected_if_no_sources: NO-SOURCE
+      - name: assemble_debug
+        command_ref: commands.assemble_debug
+
+  latest_commit_fixes:
+    environment: local
+    requires_prerequisites:
+      - android_sdk_35
+      - libcore_aar
+    intent:
+      scope: recent_changes
+      keywords:
+        - 最近提交
+        - 最新 commit
+        - 修复功能
+    steps:
+      - name: native_core
+        command_ref: commands.native_core
+        requires_linux_compatible_shell: true
+      - name: unit_test
+        command_ref: commands.unit_test
+        expected_if_no_sources: NO-SOURCE
+      - name: assemble_debug
+        command_ref: commands.assemble_debug
+      - name: lint_debug
+        command_ref: commands.lint_debug
+
+  device_iteration:
+    environment: local
+    requires_prerequisites:
+      - android_sdk_35
+      - adb
+      - connected_device
+    intent:
+      scope: connected_device
+      keywords:
+        - 设备测试
+        - instrumentation
+        - connectedAndroidTest
+    requires_device: true
+    steps:
+      - name: connected_android_test
+        command_ref: commands.connected_android_test

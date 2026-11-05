@@ -1,0 +1,67 @@
+project:
+  id: nb4a
+  aliases:
+    - NB4A
+    - NekoBoxForAndroid
+    - nekobox-for-android
+  name: NekoBox for Android
+  type: android
+  root: E:/code/java/NekoBoxForAndroid
+
+defaults:
+  environment: local
+  test_workflow: local_iteration
+
+paths:
+  gradle_wrapper: ./gradlew.bat
+  app_module: ./app
+  metadata: ./nb4a.properties
+  native_module: ./libcore
+  native_artifact: ./app/libs/libcore.aar
+
+environments:
+  local:
+    role: development
+    host_ref: local
+    workspace: E:/code/java/NekoBoxForAndroid
+    variant: ossDebug
+    java:
+      required_major: 21
+    gradle:
+      wrapper_version: 8.10.2
+    android:
+      compile_sdk: 35
+      target_sdk: 35
+      min_sdk: 21
+      build_tools: 35.0.1
+      ndk: 25.0.8775105
+      sdk_sources:
+        - local.properties:sdk.dir
+        - env:ANDROID_HOME
+        - env:ANDROID_SDK_ROOT
+    native:
+      shell: bash
+      go_toolchain: go1.23.6
+      ci_go_range: ^1.25
+      local_replacements:
+        - libneko
+        - sing-box
+      artifact: app/libs/libcore.aar
+    commands:
+      - native_core
+      - tasks
+      - compile
+      - unit_test
+      - assemble_debug
+      - lint_debug
+      - connected_android_test
+
+commands:
+  wrapper_version: ./gradlew.bat --version
+  tasks: ./gradlew.bat tasks --all --console=plain
+  native_core: bash ./run lib core
+  compile: ./gradlew.bat :app:compileOssDebugKotlin --console=plain
+  unit_test: ./gradlew.bat :app:testOssDebugUnitTest --console=plain
+  assemble_debug: ./gradlew.bat :app:assembleOssDebug --console=plain
+  lint_debug: ./gradlew.bat :app:lintOssDebug --console=plain
+  connected_android_test: ./gradlew.bat :app:connectedOssDebugAndroidTest --console=plain
