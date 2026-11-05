@@ -12,8 +12,10 @@ import (
 	mierucommon "github.com/enfein/mieru/v3/apis/common"
 	mierupb "github.com/enfein/mieru/v3/pkg/appctl/appctlpb"
 	"github.com/sagernet/sing-box/adapter"
+	"github.com/sagernet/sing-box/log"
 	"github.com/sagernet/sing-box/option"
 	M "github.com/sagernet/sing/common/metadata"
+	"github.com/sagernet/sing/service"
 )
 
 func validOptions() Options {
@@ -235,8 +237,34 @@ func TestSingBoxDNSResolverUsesRouterAndFiltersFamily(t *testing.T) {
 	if len(ips) != 1 || !ips[0].Equal(net.ParseIP("192.0.2.10")) || router.calls != 1 {
 		t.Fatalf("resolver result = %v, calls = %d", ips, router.calls)
 	}
+	all, err := resolver.LookupIP(context.Background(), "ip", "mieru.example")
+	if err != nil || len(all) != 2 {
+		t.Fatalf("dual-stack lookup = %v, %v", all, err)
+	}
 	if _, err := resolver.LookupIP(context.Background(), "tcp", "mieru.example"); err == nil {
 		t.Fatal("unknown network was accepted")
+	}
+}
+
+func TestOutboundUsesDNSRouterFromContext(t *testing.T) {
+	router := &fakeDNSRouter{addresses: []netip.Addr{netip.MustParseAddr("192.0.2.10")}}
+	ctx := service.ContextWith[adapter.DNSRouter](context.Background(), router)
+	raw, err := NewOutbound(ctx, nil, log.NewNOPFactory().Logger(), "test", validOptions())
+	if err != nil {
+		t.Fatal(err)
+	}
+	outbound := raw.(*Outbound)
+	defer outbound.Close()
+	config, err := outbound.client.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if config.Resolver == nil {
+		t.Fatal("missing DNS resolver from sing-box context")
+	}
+	ips, err := config.Resolver.LookupIP(ctx, "ip4", "example.com")
+	if err != nil || len(ips) != 1 || router.calls != 1 {
+		t.Fatalf("lookup = %v, %v, calls = %d", ips, err, router.calls)
 	}
 }
 

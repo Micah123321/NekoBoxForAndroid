@@ -34,6 +34,9 @@ jobs:
         with:
           go-version: '1.25.x'
           cache-dependency-path: libcore/go.sum
+      - name: Checkout native test dependencies
+        if: steps.cache.outputs.cache-hit == 'true'
+        run: ./run lib core get_source
       - name: Native Build
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
@@ -60,17 +63,21 @@ jobs:
         run: find buildScript libcore/*.sh | xargs cat | sha1sum > golang_status
       - name: Libcore Status
         run: git ls-files libcore | xargs cat | sha1sum > libcore_status
-      - name: LibCore Cache
-        uses: actions/cache@v4
+      - name: Download libcore AAR
+        uses: actions/download-artifact@v4
         with:
-          path: |
-            app/libs/libcore.aar
-          key: ${{ hashFiles('.github/workflows/*', 'golang_status', 'libcore_status') }}
+          name: libcore-aar
+          path: app/libs
       - name: Gradle cache
         uses: actions/cache@v4
         with:
           path: ~/.gradle
           key: gradle-oss-${{ hashFiles('**/*.gradle.kts') }}
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
       - name: Gradle Build
         env:
           BUILD_PLUGIN: none

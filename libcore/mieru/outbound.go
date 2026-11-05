@@ -13,6 +13,7 @@ import (
 	E "github.com/sagernet/sing/common/exceptions"
 	M "github.com/sagernet/sing/common/metadata"
 	N "github.com/sagernet/sing/common/network"
+	"github.com/sagernet/sing/service"
 
 	mieruclient "github.com/enfein/mieru/v3/apis/client"
 	mierucommon "github.com/enfein/mieru/v3/apis/common"
@@ -43,7 +44,7 @@ func NewOutbound(ctx context.Context, router adapter.Router, logger log.ContextL
 		return nil, err
 	}
 	var resolver mierucommon.DNSResolver
-	if dnsRouter, ok := router.(adapter.DNSRouter); ok {
+	if dnsRouter := service.FromContext[adapter.DNSRouter](ctx); dnsRouter != nil {
 		resolver = singBoxDNSResolver{router: dnsRouter}
 	}
 	config, err := buildMieruClientConfig(normalized, mieruDialer{dialer: outboundDialer}, resolver)
@@ -222,7 +223,7 @@ func buildMieruClientConfig(options normalizedOptions, dialer mieruDialer, resol
 type singBoxDNSResolver struct{ router adapter.DNSRouter }
 
 func (r singBoxDNSResolver) LookupIP(ctx context.Context, network, host string) ([]net.IP, error) {
-	if network != "ip4" && network != "ip6" {
+	if network != "ip" && network != "ip4" && network != "ip6" {
 		return nil, fmt.Errorf("unsupported DNS network %q", network)
 	}
 	addresses, err := r.router.Lookup(ctx, host, adapter.DNSQueryOptions{})
