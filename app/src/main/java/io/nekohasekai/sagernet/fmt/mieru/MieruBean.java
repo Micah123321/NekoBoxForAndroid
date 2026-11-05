@@ -19,21 +19,23 @@
 package io.nekohasekai.sagernet.fmt.mieru;
 
 import androidx.annotation.NonNull;
-
 import com.esotericsoftware.kryo.io.ByteBufferInput;
 import com.esotericsoftware.kryo.io.ByteBufferOutput;
-
 import org.jetbrains.annotations.NotNull;
-
+import java.util.ArrayList;
+import java.util.List;
 import io.nekohasekai.sagernet.fmt.AbstractBean;
 import io.nekohasekai.sagernet.fmt.KryoConverters;
 
 public class MieruBean extends AbstractBean {
-
     public String protocol;
     public String username;
     public String password;
     public Integer mtu;
+    public List<String> serverPorts;
+    public String multiplexing;
+    public String trafficPattern;
+    public String handshakeMode;
 
     @Override
     public void initializeDefaultValues() {
@@ -42,30 +44,50 @@ public class MieruBean extends AbstractBean {
         if (username == null) username = "";
         if (password == null) password = "";
         if (mtu == null) mtu = 1400;
+        if (serverPorts == null) serverPorts = new ArrayList<>();
+        if (multiplexing == null) multiplexing = "";
+        if (trafficPattern == null) trafficPattern = "";
+        if (handshakeMode == null) handshakeMode = "";
     }
 
     @Override
     public void serialize(ByteBufferOutput output) {
-        output.writeInt(0);
+        output.writeInt(2);
         super.serialize(output);
         output.writeString(protocol);
         output.writeString(username);
         output.writeString(password);
-        if (protocol.equals("UDP")) {
-            output.writeInt(mtu);
+        output.writeInt(mtu == null ? 1400 : mtu);
+        output.writeInt(serverPorts == null ? 0 : serverPorts.size());
+        if (serverPorts != null) {
+            for (String port : serverPorts) output.writeString(port);
         }
+        output.writeString(multiplexing);
+        output.writeString(trafficPattern);
+        output.writeString(handshakeMode);
     }
 
     @Override
     public void deserialize(ByteBufferInput input) {
         int version = input.readInt();
+        if (version < 0 || version > 2) throw new IllegalArgumentException("Unsupported Mieru profile version");
         super.deserialize(input);
         protocol = input.readString();
         username = input.readString();
         password = input.readString();
-        if (protocol.equals("UDP")) {
+        if (version == 0) {
+            if ("UDP".equals(protocol)) mtu = input.readInt();
+        } else {
             mtu = input.readInt();
+            int count = input.readInt();
+            if (count < 0 || count > 65535) throw new IllegalArgumentException("Invalid Mieru port count");
+            serverPorts = new ArrayList<>();
+            for (int i = 0; i < count; i++) serverPorts.add(input.readString());
+            multiplexing = input.readString();
+            trafficPattern = input.readString();
+            if (version >= 2) handshakeMode = input.readString();
         }
+        initializeDefaultValues();
     }
 
     @NotNull
@@ -77,13 +99,9 @@ public class MieruBean extends AbstractBean {
     public static final Creator<MieruBean> CREATOR = new CREATOR<MieruBean>() {
         @NonNull
         @Override
-        public MieruBean newInstance() {
-            return new MieruBean();
-        }
+        public MieruBean newInstance() { return new MieruBean(); }
 
         @Override
-        public MieruBean[] newArray(int size) {
-            return new MieruBean[size];
-        }
+        public MieruBean[] newArray(int size) { return new MieruBean[size]; }
     };
 }

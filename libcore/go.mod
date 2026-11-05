@@ -5,6 +5,7 @@ go 1.23.1
 toolchain go1.23.6
 
 require (
+	github.com/enfein/mieru/v3 v3.39.0
 	github.com/matsuridayo/libneko v1.0.0 // replaced
 	github.com/miekg/dns v1.1.67
 	github.com/oschwald/maxminddb-golang v1.13.1

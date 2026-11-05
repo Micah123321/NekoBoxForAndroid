@@ -47,6 +47,7 @@ class MieruSettingsActivity : ProfileSettingsActivity<MieruBean>() {
     override fun MieruBean.serialize() {
         name = DataStore.profileName
         serverAddress = DataStore.serverAddress
+        if (serverPort != DataStore.serverPort) serverPorts.clear()
         serverPort = DataStore.serverPort
         protocol = DataStore.serverProtocol
         username = DataStore.serverUsername

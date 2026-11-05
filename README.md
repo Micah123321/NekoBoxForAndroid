@@ -43,7 +43,7 @@ https://matsuridayo.github.io
 * WireGuard
 * Trojan-Go (trojan-go-plugin)
 * NaïveProxy (naive-plugin)
-* Mieru (mieru-plugin)
+* Mieru（内置原生支持 / built in native support）
 
 请到[这里](https://matsuridayo.github.io/nb4a-plugin/)下载插件以获得完整的代理支持.
 
@@ -54,6 +54,9 @@ supports.
 
 * 一些广泛使用的格式 (如 Shadowsocks, ClashMeta 和 v2rayN)
 * sing-box 出站
+* Mieru 节点：Clash/mihomo YAML、sing-box JSON、Mieru 分享链接及 Base64 链接订阅
+
+Mieru 直接运行在内置核心中，无需安装独立插件。
 
 仅支持解析出站，即节点。分流规则等信息会被忽略。
 

@@ -6,6 +6,9 @@ import io.nekohasekai.sagernet.database.*
 import io.nekohasekai.sagernet.fmt.AbstractBean
 import io.nekohasekai.sagernet.fmt.http.HttpBean
 import io.nekohasekai.sagernet.fmt.hysteria.HysteriaBean
+import io.nekohasekai.sagernet.fmt.mieru.MieruBean
+import io.nekohasekai.sagernet.fmt.mieru.setMieruPorts
+import io.nekohasekai.sagernet.fmt.mieru.validateMieru
 import io.nekohasekai.sagernet.fmt.hysteria.parseHysteria1Json
 import io.nekohasekai.sagernet.fmt.shadowsocks.ShadowsocksBean
 import io.nekohasekai.sagernet.fmt.shadowsocks.parseShadowsocks
@@ -246,6 +249,10 @@ object RawUpdater : GroupUpdater() {
                     // Note: YAML numbers parsed as "Long"
 
                     when (proxy["type"] as String) {
+                        "mieru" -> runCatching {
+                            proxies.add(parseMieruClash(proxy))
+                        }.onFailure { Logs.w(it) }
+
                         "socks5" -> {
                             proxies.add(SOCKSBean().apply {
                                 serverAddress = proxy["server"] as String
@@ -748,6 +755,48 @@ object RawUpdater : GroupUpdater() {
         return beans
     }
 
+    private fun parseMieruClash(proxy: Map<String, Any?>): MieruBean {
+        require(proxy["port"] == null || proxy["port-range"] == null) { "Mieru port and port-range conflict" }
+        val json = JSONObject().apply {
+            put("server", proxy["server"])
+            put("server_ports", proxy["port-range"] ?: proxy["port"])
+            put("username", proxy["username"])
+            put("password", proxy["password"])
+            put("transport", proxy["transport"])
+            put("multiplexing", proxy["multiplexing"])
+            put("mtu", proxy["mtu"])
+            put("traffic_pattern", proxy["traffic-pattern"])
+            put("handshake_mode", proxy["handshake-mode"])
+            put("tag", proxy["name"])
+        }
+        return parseMieruJson(json)
+    }
+
+    fun parseMieruJson(json: JSONObject): MieruBean {
+        val ports = mutableListOf<String>()
+        if (!json.isNull("server_port")) ports += json.get("server_port").toString()
+        if (!json.isNull("server_ports")) {
+            val value = json.get("server_ports")
+            if (value is JSONArray) {
+                for (index in 0 until value.length()) ports += value.get(index).toString()
+            } else {
+                ports += value.toString()
+            }
+        }
+        return MieruBean().apply {
+            serverAddress = json.getStr("server") ?: error("Mieru server is missing")
+            username = json.getStr("username") ?: error("Mieru username is missing")
+            password = json.getStr("password") ?: error("Mieru password is missing")
+            protocol = json.getStr("transport") ?: "TCP"
+            name = json.getStr("tag").orEmpty()
+            multiplexing = json.getStr("multiplexing").orEmpty()
+            trafficPattern = (json.getStr("traffic_pattern") ?: json.getStr("traffic-pattern")).orEmpty()
+            handshakeMode = (json.getStr("handshake_mode") ?: json.getStr("handshake-mode")).orEmpty()
+            mtu = if (json.isNull("mtu")) 1400 else json.get("mtu").toString().toIntOrNull() ?: error("Invalid Mieru MTU")
+            setMieruPorts(ports)
+        }.validateMieru().applyDefaultValues()
+    }
+
     fun parseJSON(json: Any): List<AbstractBean> {
         val proxies = ArrayList<AbstractBean>()
 
@@ -777,17 +826,24 @@ object RawUpdater : GroupUpdater() {
                             } else {
                                 it
                             }
-                        }.map {
-                            ConfigBean().apply {
-                                applyDefaultValues()
-                                type = 1
-                                config = it.toStringPretty()
-                                name = it.getStr("tag")
+                        }.mapNotNull { outbound ->
+                            if (outbound.getStr("type") == "mieru") {
+                                runCatching { parseMieruJson(outbound) }.onFailure { Logs.w(it) }.getOrNull()
+                            } else {
+                                ConfigBean().applyDefaultValues().apply {
+                                    type = 1
+                                    config = outbound.toStringPretty()
+                                    name = outbound.getStr("tag")
+                                }
                             }
                         }
                 }
 
-                json.has("server") && json.has("server_port") -> {
+                json.has("type") && json.getStr("type") == "mieru" -> {
+                    return listOf(parseMieruJson(json))
+                }
+
+                json.has("server") && (json.has("server_port") || json.has("server_ports")) -> {
                     return listOf(ConfigBean().applyDefaultValues().apply {
                         type = 1
                         config = json.toStringPretty()

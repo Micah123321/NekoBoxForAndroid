@@ -4590,6 +4590,19 @@ public class SingBoxOptions {
 
     // sing-box Options 生成器已经坏了，以下是从 husi 抄的
 
+    public static class Outbound_MieruOptions extends Outbound {
+        public String server;
+        public Integer server_port;
+        public List<String> server_ports;
+        public String transport;
+        public String username;
+        public String password;
+        public String multiplexing;
+        public String traffic_pattern;
+        public String handshake_mode;
+        public Integer mtu;
+    }
+
     public static class Outbound_AnyTLSOptions extends Outbound {
 
         // Generate note: nested type DialerOptions

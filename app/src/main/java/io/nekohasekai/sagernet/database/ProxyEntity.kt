@@ -12,7 +12,7 @@ import io.nekohasekai.sagernet.fmt.http.toUri
 import io.nekohasekai.sagernet.fmt.hysteria.*
 import io.nekohasekai.sagernet.fmt.internal.ChainBean
 import io.nekohasekai.sagernet.fmt.mieru.MieruBean
-import io.nekohasekai.sagernet.fmt.mieru.buildMieruConfig
+import io.nekohasekai.sagernet.fmt.mieru.toUri
 import io.nekohasekai.sagernet.fmt.naive.NaiveBean
 import io.nekohasekai.sagernet.fmt.naive.buildNaiveConfig
 import io.nekohasekai.sagernet.fmt.naive.toUri
@@ -257,6 +257,7 @@ data class ProxyEntity(
             is HysteriaBean -> toUri()
             is TuicBean -> toUri()
             is AnyTLSBean -> toUri()
+            is MieruBean -> toUri()
             is NekoBean -> ""
             else -> toUniversalLink()
         }
@@ -282,11 +283,6 @@ data class ProxyEntity(
                                 append(bean.buildTrojanGoConfig(port))
                             }
 
-                            is MieruBean -> {
-                                append("\n\n")
-                                append(bean.buildMieruConfig(port))
-                            }
-
                             is NaiveBean -> {
                                 append("\n\n")
                                 append(bean.buildNaiveConfig(port))
@@ -306,7 +302,6 @@ data class ProxyEntity(
     fun needExternal(): Boolean {
         return when (type) {
             TYPE_TROJAN_GO -> true
-            TYPE_MIERU -> true
             TYPE_NAIVE -> true
             TYPE_HYSTERIA -> !hysteriaBean!!.canUseSingBox()
             TYPE_NEKO -> true

@@ -13,6 +13,9 @@ android {
     compileOptions {
         isCoreLibraryDesugaringEnabled = true
     }
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+    }
     ksp {
         arg("room.incremental", "true")
         arg("room.schemaLocation", "$projectDir/schemas")
@@ -41,6 +44,9 @@ android {
 dependencies {
 
     implementation(fileTree("libs"))
+
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.robolectric:robolectric:4.14.1")
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4")
     implementation("androidx.core:core-ktx:1.9.0")

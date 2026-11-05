@@ -4,6 +4,8 @@ import com.google.gson.JsonParser
 import io.nekohasekai.sagernet.fmt.AbstractBean
 import io.nekohasekai.sagernet.fmt.Serializable
 import io.nekohasekai.sagernet.fmt.http.parseHttp
+import io.nekohasekai.sagernet.fmt.mieru.parseMieruSimpleLinks
+import io.nekohasekai.sagernet.fmt.mieru.parseMieruStandardLink
 import io.nekohasekai.sagernet.fmt.hysteria.parseHysteria1
 import io.nekohasekai.sagernet.fmt.hysteria.parseHysteria2
 import io.nekohasekai.sagernet.fmt.naive.parseNaive
@@ -115,7 +117,11 @@ suspend fun parseProxies(text: String): List<AbstractBean> {
             throw SubscriptionFoundException(this)
         }
 
-        if (startsWith("sn://")) {
+        if (startsWith("mierus://")) {
+            runCatching { entities.addAll(parseMieruSimpleLinks(this)) }.onFailure { Logs.w(it) }
+        } else if (startsWith("mieru://")) {
+            runCatching { entities.addAll(parseMieruStandardLink(this)) }.onFailure { Logs.w(it) }
+        } else if (startsWith("sn://")) {
             Logs.d("Try parse universal link: $this")
             runCatching {
                 entities.add(parseUniversal(this))
